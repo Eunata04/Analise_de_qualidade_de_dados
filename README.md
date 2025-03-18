@@ -1,5 +1,8 @@
 # 🔎 Relatório de Qualidade de Dados
 
+<span style="color:red">Obs: </span>Projeto em desenvolvimento
+
+
 Este projeto tem como objetivo realizar uma checagem de qualidade dos dados entre um arquivo CSV e uma tabela SQL. Através deste processo, simulei um cenário típico do ambiente de trabalho, no qual é necessário verificar se os dados importados de um arquivo CSV para uma tabela SQL foram transferidos corretamente. O foco principal é a validação das colunas e a comparação entre as duas fontes de dados, garantindo que a integridade e a consistência das informações estejam preservadas durante o processo de importação.
 
 No nosso caso de estudo a importação do CSV para o excel foi realizado de forma errada propositalmente no intuito de verificar este erro.
