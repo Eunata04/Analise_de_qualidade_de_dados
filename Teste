@@ -1,0 +1,719 @@
+🚀 MVP - Guia Completo de Implementação
+📋 PRÉ-REQUISITOS (Verificar ANTES de começar)
+✅ Checklist:
+
+ Acesso administrativo ao SharePoint
+ Acesso ao Power Automate (licença básica do M365)
+ Acesso ao Databricks com permissão para gerar tokens
+ Conta com permissão para criar Flows no Power Automate
+
+🔍 Informações que você vai precisar coletar:
+
+URL do seu SharePoint: https://suaempresa.sharepoint.com/sites/NomeSite
+Databricks Workspace URL: https://xxxxx.azuredatabricks.net
+Warehouse ID do Databricks (vou ensinar a pegar)
+Token de acesso do Databricks (vou ensinar a gerar)
+Nome das tabelas/listas que existem (lista_verde, lista_amarela, etc.)
+
+
+📅 CRONOGRAMA DO MVP (3 dias)
+
+Dia 1 (2h): SharePoint List + Databricks Setup
+Dia 2 (3h): Power Automate Flow
+Dia 3 (2h): Testes + Ajustes
+
+
+🗓️ DIA 1 - FUNDAÇÃO
+PARTE 1: Criar SharePoint List (30 min)
+Passo 1: Criar a lista
+
+Acesse seu site SharePoint: https://suaempresa.sharepoint.com/sites/SeuSite
+Clique em "Conteúdo do site" (menu lateral esquerdo)
+Clique em "+ Novo" → "Lista"
+Escolha "Lista em branco"
+Nome: Regras_Fraude
+Descrição: Sistema de regras de detecção de fraudes
+Clique em "Criar"
+
+Passo 2: Adicionar colunas (uma por uma)
+COLUNA 1 - Nome_Regra (já existe como "Título", vamos renomear)
+
+Clique em "Adicionar coluna" → Renomear coluna existente "Título"
+Novo nome: Nome_Regra
+
+COLUNA 2 - Campo_1
+
+Clique em "+ Adicionar coluna" → "Escolha"
+Nome: Campo_1
+Escolhas (uma por linha):
+
+   cod_prestador
+   cod_procedimento
+   cod_beneficiario
+   valor_transacao
+   data_transacao
+   segmentacao
+   Custo_ITEM
+
+Formato: Menu suspenso
+Valor padrão: cod_prestador
+Salvar
+
+COLUNA 3 - Operador_1
+
+"+ Adicionar coluna" → "Escolha"
+Nome: Operador_1
+Escolhas:
+
+   está na lista
+   é igual a
+   é diferente de
+   é maior que
+   é menor que
+   contém
+
+Formato: Menu suspenso
+Valor padrão: está na lista
+Salvar
+
+COLUNA 4 - Valor_1
+
+"+ Adicionar coluna" → "Escolha"
+Nome: Valor_1
+Escolhas:
+
+   lista_verde
+   lista_amarela
+   lista_vermelha
+   lista_laranja
+   [valor_livre]
+
+Formato: Menu suspenso
+Permitir seleções de preenchimento: Sim (importante!)
+Salvar
+
+COLUNA 5 - Campo_2
+
+Repetir processo da COLUNA 2
+Nome: Campo_2
+Mesmas escolhas
+
+COLUNA 6 - Operador_2
+
+Repetir processo da COLUNA 3
+Nome: Operador_2
+
+COLUNA 7 - Valor_2
+
+Repetir processo da COLUNA 4
+Nome: Valor_2
+
+COLUNA 8 - Segmentacao_Obrigatoria
+
+"+ Adicionar coluna" → "Texto"
+Nome: Segmentacao_Obrigatoria
+Tipo: Uma linha de texto
+Salvar
+
+COLUNA 9 - Excluir_Custo_ITEM
+
+"+ Adicionar coluna" → "Texto"
+Nome: Excluir_Custo_ITEM
+Tipo: Várias linhas de texto
+Salvar
+
+COLUNA 10 - Status
+
+"+ Adicionar coluna" → "Escolha"
+Nome: Status
+Escolhas:
+
+   Rascunho
+   Executar
+   Executando
+   Concluída
+   Erro
+
+Formato: Menu suspenso
+Valor padrão: Rascunho
+Salvar
+
+COLUNA 11 - SQL_Gerado
+
+"+ Adicionar coluna" → "Texto"
+Nome: SQL_Gerado
+Tipo: Várias linhas de texto
+Salvar
+
+COLUNA 12 - Link_Resultado
+
+"+ Adicionar coluna" → "Hiperlink"
+Nome: Link_Resultado
+Salvar
+
+COLUNA 13 - Qtd_Registros
+
+"+ Adicionar coluna" → "Número"
+Nome: Qtd_Registros
+Salvar
+
+COLUNA 14 - Data_Execucao
+
+"+ Adicionar coluna" → "Data e hora"
+Nome: Data_Execucao
+Incluir hora: Sim
+Salvar
+
+COLUNA 15 - Mensagem_Erro
+
+"+ Adicionar coluna" → "Texto"
+Nome: Mensagem_Erro
+Tipo: Várias linhas de texto
+Salvar
+
+Passo 3: Criar item de teste
+
+Clique em "+ Novo"
+Preencha:
+
+Nome_Regra: Teste Inicial
+Campo_1: cod_prestador
+Operador_1: está na lista
+Valor_1: lista_verde
+Campo_2: cod_procedimento
+Operador_2: está na lista
+Valor_2: lista_amarela
+Segmentacao_Obrigatoria: SPADT
+Excluir_Custo_ITEM: Autorizado, ETL, limiar
+Status: Rascunho
+
+
+Salvar
+
+✅ Checkpoint: SharePoint List criada com 15 colunas e 1 item de teste
+
+PARTE 2: Configurar Databricks (30 min)
+Passo 1: Gerar Personal Access Token
+
+Acesse seu Databricks: https://xxxxx.azuredatabricks.net
+Clique no seu perfil (canto superior direito)
+Clique em "User Settings"
+Aba "Developer" ou "Access Tokens"
+Clique em "Generate New Token"
+Configurações:
+
+Comment: Power Automate Integration
+Lifetime: 90 days (ou sem expiração se permitido)
+
+
+Clique em "Generate"
+⚠️ COPIE O TOKEN AGORA (não vai aparecer de novo!)
+Salve em local seguro: dapi1234567890abcdef...
+
+Passo 2: Pegar Warehouse ID
+
+No Databricks, menu lateral: "SQL Warehouses"
+Selecione o warehouse que vai usar (ou crie um novo)
+Clique no warehouse
+Na URL, copie o ID:
+
+   https://xxxxx.azuredatabricks.net/sql/warehouses/a1b2c3d4e5f6
+                                                    ^^^^^^^^^^^^^^^^^
+                                                    Este é o ID
+
+Salve: Warehouse ID: a1b2c3d4e5f6
+
+Passo 3: Testar API manualmente (opcional mas recomendado)
+
+Abra o Postman ou Insomnia (ou use curl)
+Configure request:
+
+   POST https://xxxxx.azuredatabricks.net/api/2.0/sql/statements/
+   
+   Headers:
+   Authorization: Bearer dapi1234567890abcdef...
+   Content-Type: application/json
+   
+   Body:
+   {
+     "warehouse_id": "a1b2c3d4e5f6",
+     "statement": "SELECT 1 as teste",
+     "wait_timeout": "10s"
+   }
+
+Clique Send
+Deve retornar status 200 e resultado com "state": "SUCCEEDED"
+
+✅ Checkpoint: Token e Warehouse ID funcionando
+
+PARTE 3: Criar biblioteca no SharePoint para resultados (15 min)
+
+No SharePoint, "Conteúdo do site"
+"+ Novo" → "Biblioteca de documentos"
+Nome: Resultados_Regras
+Criar
+Criar pastas:
+
+2026
+Dentro de 2026: 01, 02, 03, etc (meses)
+
+
+
+✅ Checkpoint: Estrutura completa de armazenamento
+
+🗓️ DIA 2 - AUTOMAÇÃO
+PARTE 4: Criar Power Automate Flow (2-3h)
+Passo 1: Criar novo Flow
+
+Acesse: https://make.powerautomate.com
+Menu lateral: "Meus fluxos"
+"+ Novo fluxo" → "Fluxo de nuvem automatizado"
+Nome: Execução Automática de Regras de Fraude
+Trigger: Busque por SharePoint
+Selecione: "Quando um item é criado ou modificado"
+Criar
+
+Passo 2: Configurar Trigger
+
+Endereço do Site: Cole a URL do seu SharePoint
+Nome da Lista: Selecione Regras_Fraude
+Clique em "Mostrar opções avançadas"
+Em "Limit Columns by View": deixe em branco (vai usar todas)
+
+Passo 3: Adicionar Condição - Verificar Status
+
+"+ Nova etapa"
+Busque: Condição
+Selecione: "Condição" (Controle)
+Configure:
+
+Primeira caixa: Clique e selecione "Status" (do conteúdo dinâmico)
+Operador: é igual a
+Segunda caixa: Executar
+
+
+
+⚠️ IMPORTANTE: Todas as próximas ações vão dentro do "Se sim" desta condição!
+Passo 4: Atualizar Status para "Executando"
+
+Dentro do "Se sim", clique "Adicionar uma ação"
+Busque: SharePoint
+Selecione: "Atualizar item"
+Configure:
+
+Endereço do Site: (mesmo do trigger)
+Nome da Lista: Regras_Fraude
+ID: Selecione "ID" do conteúdo dinâmico
+Status: Executando
+
+
+
+Passo 5: Inicializar Variável - SQL
+
+"Adicionar uma ação"
+Busque: Variáveis
+Selecione: "Inicializar variável"
+Configure:
+
+Nome: SQL_Query
+Tipo: String
+Valor: (deixe em branco por enquanto)
+
+
+
+Passo 6: Construir SQL - Parte 1 (Condições)
+
+"Adicionar uma ação"
+Busque: Variáveis
+Selecione: "Definir variável"
+Configure:
+
+Nome: SQL_Query
+Valor: (cole isso e adapte):
+
+
+
+SELECT * FROM transacoes WHERE
+Passo 7: Adicionar Condição do Campo_1
+
+"Adicionar uma ação"
+Busque: Compor (Operações de dados)
+Selecione: "Compor"
+Entradas: (construa assim usando conteúdo dinâmico)
+
+@{variables('SQL_Query')} @{triggerOutputs()?['body/Campo_1']} IN (SELECT cod FROM @{triggerOutputs()?['body/Valor_1']})
+
+"Adicionar uma ação"
+"Definir variável"
+
+Nome: SQL_Query
+Valor: @{outputs('Compor')}
+
+
+
+Passo 8: Adicionar Condição do Campo_2
+
+"Adicionar uma ação"
+"Compor"
+Entradas:
+
+@{variables('SQL_Query')} AND @{triggerOutputs()?['body/Campo_2']} IN (SELECT cod FROM @{triggerOutputs()?['body/Valor_2']})
+
+"Adicionar uma ação"
+"Definir variável"
+
+Nome: SQL_Query
+Valor: @{outputs('Compor_2')}
+
+
+
+Passo 9: Adicionar Segmentação
+
+"Adicionar uma ação"
+"Compor"
+Entradas:
+
+@{variables('SQL_Query')} AND segmentacao = '@{triggerOutputs()?['body/Segmentacao_Obrigatoria']}'
+
+"Definir variável"
+
+Nome: SQL_Query
+Valor: @{outputs('Compor_3')}
+
+
+
+Passo 10: Adicionar Exclusão de Custo_ITEM
+
+"Adicionar uma ação"
+"Compor"
+Entradas:
+
+@{variables('SQL_Query')} AND Custo_ITEM NOT IN ('@{replace(triggerOutputs()?['body/Excluir_Custo_ITEM'], ',', "','")}')
+
+"Definir variável"
+
+Nome: SQL_Query
+Valor: @{outputs('Compor_4')}
+
+
+
+Passo 11: Executar no Databricks
+
+"Adicionar uma ação"
+Busque: HTTP
+Selecione: "HTTP" (Premium não é necessário!)
+Configure:
+
+Método: POST
+URI: https://xxxxx.azuredatabricks.net/api/2.0/sql/statements/
+Cabeçalhos:
+
+
+
+     Authorization: Bearer dapi1234567890abcdef...
+     Content-Type: application/json
+
+Corpo:
+
+json     {
+       "warehouse_id": "a1b2c3d4e5f6",
+       "statement": "@{variables('SQL_Query')}",
+       "wait_timeout": "30s",
+       "disposition": "INLINE",
+       "format": "JSON_ARRAY"
+     }
+Passo 12: Analisar JSON do Databricks
+
+"Adicionar uma ação"
+Busque: Analisar JSON
+Selecione: "Analisar JSON" (Operações de dados)
+Conteúdo: @{body('HTTP')}
+Esquema: Cole este schema:
+
+json{
+    "type": "object",
+    "properties": {
+        "statement_id": {"type": "string"},
+        "status": {
+            "type": "object",
+            "properties": {
+                "state": {"type": "string"}
+            }
+        },
+        "result": {
+            "type": "object",
+            "properties": {
+                "row_count": {"type": "integer"},
+                "data_array": {
+                    "type": "array"
+                }
+            }
+        }
+    }
+}
+Passo 13: Criar Tabela CSV/Excel
+
+"Adicionar uma ação"
+Busque: Criar tabela CSV
+Selecione: "Criar tabela CSV"
+De: @{body('Analisar_JSON')?['result']?['data_array']}
+
+Passo 14: Criar arquivo no SharePoint
+
+"Adicionar uma ação"
+Busque: SharePoint
+Selecione: "Criar arquivo"
+Configure:
+
+Endereço do Site: (seu SharePoint)
+Caminho da Pasta: /Resultados_Regras/2026/@{formatDateTime(utcNow(), 'MM')}
+Nome do Arquivo: Resultado_@{triggerOutputs()?['body/Nome_Regra']}_@{formatDateTime(utcNow(), 'yyyyMMdd_HHmmss')}.csv
+Conteúdo do Arquivo: @{body('Criar_tabela_CSV')}
+
+
+
+Passo 15: Atualizar SharePoint com Sucesso
+
+"Adicionar uma ação"
+"Atualizar item" (SharePoint)
+Configure:
+
+ID: @{triggerOutputs()?['body/ID']}
+Status: Concluída
+SQL_Gerado: @{variables('SQL_Query')}
+Link_Resultado: @{body('Criar_arquivo')?['Path']}
+Qtd_Registros: @{body('Analisar_JSON')?['result']?['row_count']}
+Data_Execucao: @{utcNow()}
+
+
+
+Passo 16: Enviar Email de Sucesso
+
+"Adicionar uma ação"
+Busque: Enviar um email (V2) (Office 365 Outlook)
+Configure:
+
+Para: @{triggerOutputs()?['body/Author']?['Email']}
+Assunto: ✅ Regra "@{triggerOutputs()?['body/Nome_Regra']}" executada com sucesso
+Corpo: (cole e ajuste formatação):
+
+
+
+html<p>Olá <strong>@{triggerOutputs()?['body/Author']?['DisplayName']}</strong>,</p>
+
+<p>Sua regra de fraude foi executada com sucesso!</p>
+
+<h3>📊 Resumo:</h3>
+<ul>
+  <li><strong>Total de registros:</strong> @{body('Analisar_JSON')?['result']?['row_count']} hits</li>
+  <li><strong>Data/hora:</strong> @{formatDateTime(utcNow(), 'dd/MM/yyyy HH:mm')}</li>
+</ul>
+
+<h3>📥 Resultado:</h3>
+<p><a href="@{body('Criar_arquivo')?['LinkingUrl']}">Clique aqui para baixar o arquivo</a></p>
+
+<h3>📝 SQL Executado:</h3>
+<pre>@{variables('SQL_Query')}</pre>
+
+<hr>
+<p><small>Este email foi gerado automaticamente pelo Sistema de Regras de Fraude</small></p>
+```
+
+### **Passo 17: Configurar tratamento de erro**
+1. No **"Se não"** da condição principal (lá do início), adicione:
+2. **"Atualizar item"**
+   - Status: `Erro`
+   - Mensagem_Erro: `Status deve estar em "Executar" para executar a regra`
+
+### **Passo 18: Adicionar Scope para erro de execução**
+1. ANTES do "Atualizar SharePoint com Sucesso", adicione:
+2. Busque: `Escopo` (Controle)
+3. Selecione: **"Escopo"**
+4. Mova TODAS as ações de Databricks até Email para DENTRO do Escopo
+5. Depois do Escopo, clique **"..."** → **"Configurar execução após"**
+6. Marque: `falhou`, `expirou`, `foi ignorada`
+7. Adicione:
+   - **"Atualizar item"**
+     - Status: `Erro`
+     - Mensagem_Erro: `@{body('HTTP')?['message']}`
+   - **"Enviar um email (V2)"**
+     - Assunto: `❌ Erro ao executar regra`
+     - Corpo: `Houve um erro: @{body('HTTP')?['message']}`
+
+### **Passo 19: Salvar e Testar**
+1. Clique em **"Salvar"** (canto superior direito)
+2. Aguarde salvar completamente
+
+✅ **Checkpoint:** Flow criado e salvo
+
+---
+
+# 🗓️ **DIA 3 - TESTES E AJUSTES**
+
+## **PARTE 5: Testar o MVP (1-2h)**
+
+### **Teste 1: Execução Básica**
+1. Volte para SharePoint List: `Regras_Fraude`
+2. Abra o item **"Teste Inicial"**
+3. Mude Status para: `Executar`
+4. **Salvar**
+5. Aguarde 30-60 segundos
+6. Atualize a página
+7. Verifique:
+   - ✅ Status mudou para "Concluída"?
+   - ✅ SQL_Gerado foi preenchido?
+   - ✅ Link_Resultado tem URL?
+   - ✅ Qtd_Registros tem número?
+   - ✅ Recebeu email?
+
+### **Teste 2: Verificar Arquivo**
+1. Clique no Link_Resultado
+2. Arquivo CSV foi criado?
+3. Abra o arquivo
+4. Dados corretos?
+
+### **Teste 3: Criar Nova Regra do Zero**
+1. Na lista, clique **"+ Novo"**
+2. Preencha todos os campos
+3. Status: `Executar`
+4. **Salvar**
+5. Repita verificações do Teste 1
+
+### **Teste 4: Erro Proposital**
+1. Crie nova regra
+2. Valor_1: coloque algo que não existe: `lista_inexistente`
+3. Status: `Executar`
+4. **Salvar**
+5. Verifique:
+   - ✅ Status mudou para "Erro"?
+   - ✅ Mensagem_Erro foi preenchida?
+   - ✅ Recebeu email de erro?
+
+---
+
+## **PARTE 6: Ajustes e Melhorias (1h)**
+
+### **Ajuste 1: Melhorar formato do SQL**
+1. No Power Automate, edite o Flow
+2. Na ação final "Definir variável" (SQL_Query), adicione quebras de linha:
+```
+SELECT * 
+FROM transacoes 
+WHERE @{triggerOutputs()?['body/Campo_1']} IN (SELECT cod FROM @{triggerOutputs()?['body/Valor_1']})
+  AND @{triggerOutputs()?['body/Campo_2']} IN (SELECT cod FROM @{triggerOutputs()?['body/Valor_2']})
+  AND segmentacao = '@{triggerOutputs()?['body/Segmentacao_Obrigatoria']}'
+  AND Custo_ITEM NOT IN ('@{replace(triggerOutputs()?['body/Excluir_Custo_ITEM'], ',', "','")}')
+Ajuste 2: Adicionar timeout no loop
+(Se Databricks demorar, adicionar verificação de status)
+
+Após "HTTP" do Databricks
+Adicione "Até" (loop):
+
+Condição: @{body('HTTP')?['status']?['state']} igual a SUCCEEDED
+Dentro do loop:
+
+"Atrasar": 2 segundos
+"HTTP - GET": checar status da query
+
+
+Limite: 20 iterações
+
+
+
+Ajuste 3: Formatar email melhor
+
+No email de sucesso, melhore o HTML
+Adicione logo da empresa
+Cores corporativas
+
+
+PARTE 7: Documentação para Usuários (30 min)
+Criar doc de 1 página:
+markdown# 📘 Como Criar Regras de Fraude
+
+## 1. Acesse a Lista
+https://suaempresa.sharepoint.com/sites/SeuSite/Lists/Regras_Fraude
+
+## 2. Clique em "+ Novo"
+
+## 3. Preencha:
+- **Nome da Regra**: Descrição clara (ex: "Prestador Verde + Proc Amarelo")
+- **Campo_1**: Escolha o campo (ex: cod_prestador)
+- **Operador_1**: Escolha a condição (ex: está na lista)
+- **Valor_1**: Escolha o valor (ex: lista_verde)
+- **Campo_2**: Segundo campo
+- **Operador_2**: Segunda condição
+- **Valor_2**: Segundo valor
+- **Segmentação Obrigatória**: Ex: SPADT
+- **Excluir Custo_ITEM**: Ex: Autorizado, ETL, limiar
+- **Status**: Escolha "Executar" para rodar imediatamente
+
+## 4. Clique em "Salvar"
+
+## 5. Aguarde 1-2 minutos
+Você receberá um email com o resultado!
+
+## 6. Acesse o arquivo
+O email terá um link para baixar o CSV com os resultados.
+
+---
+
+**Dúvidas?** Contate: suporte@empresa.com
+Salve como PDF e compartilhe.
+
+PARTE 8: Monitoramento (opcional)
+Criar Dashboard Power BI:
+
+Power BI Desktop
+Conectar ao SharePoint List
+Criar visualizações:
+
+Total de regras por status
+Regras mais executadas
+Tempo médio de execução
+Total de hits por dia
+
+
+Publicar no Power BI Service
+
+
+✅ CHECKLIST FINAL DO MVP
+
+ SharePoint List criada com 15 colunas
+ Item de teste criado
+ Token Databricks gerado e testado
+ Warehouse ID identificado
+ Biblioteca Resultados_Regras criada
+ Power Automate Flow criado e salvo
+ Teste 1 passou (execução básica)
+ Teste 2 passou (arquivo criado)
+ Teste 3 passou (nova regra)
+ Teste 4 passou (tratamento de erro)
+ Email de sucesso funcionando
+ Email de erro funcionando
+ Documentação criada
+ 2-3 usuários piloto treinados
+
+
+🎯 PRÓXIMOS PASSOS (Após MVP)
+Semana 2:
+
+ Adicionar mais campos de filtro (Campo_3, Campo_4)
+ Criar templates de regras comuns
+ Agendamento de regras (diário, semanal)
+ Histórico de execuções
+
+Mês 2:
+
+ Dashboard Power BI
+ Alertas automáticos (ex: se > 100 hits)
+ Aprovação de regras críticas
+ Exportar para Excel formatado (não só CSV)
+
+
+📞 SUPORTE DURANTE IMPLEMENTAÇÃO
+Se travar em algum passo, me mande:
+
+Print da tela onde travou
+Mensagem de erro (se houver)
+Qual passo estava fazendo
