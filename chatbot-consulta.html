@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Assistente de Consulta</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f2f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .chat-container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+      width: 100%;
+      max-width: 680px;
+      display: flex;
+      flex-direction: column;
+      height: 90vh;
+      max-height: 700px;
+      overflow: hidden;
+    }
+
+    .chat-header {
+      background: linear-gradient(135deg, #0078d4, #005a9e);
+      color: white;
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .chat-header .icon {
+      width: 40px;
+      height: 40px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .chat-header h2 { font-size: 16px; font-weight: 600; }
+    .chat-header p { font-size: 12px; opacity: 0.85; margin-top: 2px; }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .message {
+      display: flex;
+      flex-direction: column;
+      max-width: 85%;
+      animation: fadeIn 0.2s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .message.user { align-self: flex-end; align-items: flex-end; }
+    .message.bot  { align-self: flex-start; align-items: flex-start; }
+
+    .bubble {
+      padding: 12px 16px;
+      border-radius: 16px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .user .bubble {
+      background: #0078d4;
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+
+    .bot .bubble {
+      background: #f0f2f5;
+      color: #1a1a1a;
+      border-bottom-left-radius: 4px;
+    }
+
+    .columns-card {
+      background: #fff;
+      border: 1.5px solid #0078d4;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-top: 8px;
+      max-width: 100%;
+    }
+
+    .columns-card h4 {
+      color: #0078d4;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .column-tag {
+      display: inline-block;
+      background: #e8f0fe;
+      color: #0078d4;
+      border: 1px solid #c2d8f7;
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      margin: 3px 3px 3px 0;
+    }
+
+    .justificativa {
+      font-size: 13px;
+      color: #444;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #e8e8e8;
+      line-height: 1.5;
+    }
+
+    .typing-indicator {
+      display: flex;
+      gap: 4px;
+      padding: 12px 16px;
+      background: #f0f2f5;
+      border-radius: 16px;
+      border-bottom-left-radius: 4px;
+      width: fit-content;
+    }
+
+    .typing-indicator span {
+      width: 8px; height: 8px;
+      background: #999;
+      border-radius: 50%;
+      animation: bounce 1.2s infinite;
+    }
+
+    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-6px); }
+    }
+
+    .chat-input {
+      padding: 16px 20px;
+      border-top: 1px solid #e8e8e8;
+      display: flex;
+      gap: 10px;
+      flex-shrink: 0;
+      background: white;
+    }
+
+    .chat-input textarea {
+      flex: 1;
+      border: 1.5px solid #ddd;
+      border-radius: 24px;
+      padding: 10px 18px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: none;
+      outline: none;
+      transition: border 0.2s;
+      max-height: 100px;
+      min-height: 42px;
+      line-height: 1.4;
+    }
+
+    .chat-input textarea:focus { border-color: #0078d4; }
+
+    .chat-input button {
+      background: #0078d4;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 42px;
+      height: 42px;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.2s;
+    }
+
+    .chat-input button:hover { background: #005a9e; }
+    .chat-input button:disabled { background: #ccc; cursor: not-allowed; }
+
+    .config-banner {
+      background: #fff8e1;
+      border: 1px solid #ffe082;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: #795548;
+      margin: 10px 20px 0;
+      flex-shrink: 0;
+    }
+
+    .config-banner strong { display: block; margin-bottom: 3px; color: #e65100; }
+  </style>
+</head>
+<body>
+
+<div class="chat-container">
+
+  <div class="chat-header">
+    <div class="icon">🤖</div>
+    <div>
+      <h2>Assistente de Consulta</h2>
+      <p>Descreva sua análise e eu indico as colunas certas</p>
+    </div>
+  </div>
+
+  <!-- Remova este banner depois de configurar a URL do Flow -->
+  <div class="config-banner" id="configBanner">
+    <strong>⚙️ Configuração necessária</strong>
+    Substitua <code>SUA_URL_DO_FLOW_AQUI</code> no código pela URL do seu Power Automate.
+  </div>
+
+  <div class="chat-messages" id="messages"></div>
+
+  <div class="chat-input">
+    <textarea
+      id="userInput"
+      placeholder="Ex: Quero analisar os atendimentos por prestador no mês passado..."
+      rows="1"
+    ></textarea>
+    <button id="sendBtn" onclick="sendMessage()">➤</button>
+  </div>
+
+</div>
+
+<script>
+  // ============================================================
+  // ⚙️  CONFIGURAÇÃO — substitua pela URL do seu Power Automate
+  // ============================================================
+  const FLOW_URL = "SUA_URL_DO_FLOW_AQUI";
+  // ============================================================
+
+  const CATALOGO_COLUNAS = `
+- Num_associado: Número da carteira do beneficiário (identificador único do associado/paciente)
+- Mes_ano_ref: Mês e ano de referência da competência dos dados (formato AAAA-MM)
+- Cod_prestador: Código do prestador de serviço de saúde (clínica, hospital, laboratório)
+`;
+// Adicione mais colunas acima conforme necessário
+
+  const PROMPT_SISTEMA = `Você é um assistente especializado em análise de dados de saúde. 
+Seu papel é ajudar o usuário a identificar quais colunas usar em uma consulta de base de dados.
+
+Catálogo de colunas disponíveis:
+${CATALOGO_COLUNAS}
+
+Quando o usuário descrever o que quer analisar, responda APENAS com um JSON no formato:
+{
+  "colunas": ["Coluna1", "Coluna2"],
+  "justificativa": "Explicação breve em português de por que essas colunas foram selecionadas."
+}
+
+Não adicione nenhum texto fora do JSON. Se a análise não corresponder a nenhuma coluna disponível, 
+retorne {"colunas": [], "justificativa": "Não encontrei colunas adequadas. Tente descrever melhor o que precisa."}.`;
+
+  // Mensagem inicial
+  window.onload = () => {
+    addBotMessage("Olá! 👋 Me conta o que você precisa analisar e eu indico quais colunas usar no formulário de consulta.\n\nExemplo: *\"Quero ver os atendimentos realizados em março por prestador\"*");
+  };
+
+  function addBotMessage(text) {
+    const msgs = document.getElementById("messages");
+    const div = document.createElement("div");
+    div.className = "message bot";
+    div.innerHTML = `<div class="bubble">${text.replace(/\*(.*?)\*/g, '<em>$1</em>').replace(/\n/g, '<br>')}</div>`;
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  function addUserMessage(text) {
+    const msgs = document.getElementById("messages");
+    const div = document.createElement("div");
+    div.className = "message user";
+    div.innerHTML = `<div class="bubble">${text}</div>`;
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  function addColumnsCard(colunas, justificativa) {
+    const msgs = document.getElementById("messages");
+    const div = document.createElement("div");
+    div.className = "message bot";
+
+    const tags = colunas.map(c => `<span class="column-tag">${c}</span>`).join("");
+
+    div.innerHTML = `
+      <div class="columns-card">
+        <h4>📋 Colunas sugeridas</h4>
+        <div>${tags}</div>
+        <div class="justificativa">💡 ${justificativa}</div>
+      </div>`;
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  function addTyping() {
+    const msgs = document.getElementById("messages");
+    const div = document.createElement("div");
+    div.className = "message bot";
+    div.id = "typing";
+    div.innerHTML = `<div class="typing-indicator"><span></span><span></span><span></span></div>`;
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  function removeTyping() {
+    const t = document.getElementById("typing");
+    if (t) t.remove();
+  }
+
+  async function sendMessage() {
+    const input = document.getElementById("userInput");
+    const btn = document.getElementById("sendBtn");
+    const text = input.value.trim();
+    if (!text) return;
+
+    addUserMessage(text);
+    input.value = "";
+    btn.disabled = true;
+    addTyping();
+
+    try {
+      if (FLOW_URL === "SUA_URL_DO_FLOW_AQUI") {
+        // MODO DEMO — simula resposta enquanto o Flow não está configurado
+        await new Promise(r => setTimeout(r, 1500));
+        removeTyping();
+        addColumnsCard(
+          ["Num_associado", "Mes_ano_ref", "Cod_prestador"],
+          "Demo: configure a URL do Power Automate para obter sugestões reais baseadas na sua análise."
+        );
+      } else {
+        const response = await fetch(FLOW_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mensagem: text,
+            sistema: PROMPT_SISTEMA
+          })
+        });
+
+        const data = await response.json();
+        removeTyping();
+
+        // Espera que o Flow devolva { colunas: [...], justificativa: "..." }
+        if (data.colunas && data.colunas.length > 0) {
+          addColumnsCard(data.colunas, data.justificativa);
+        } else {
+          addBotMessage(data.justificativa || "Não consegui identificar colunas. Tente reformular sua pergunta.");
+        }
+      }
+    } catch (err) {
+      removeTyping();
+      addBotMessage("❌ Erro ao conectar com o serviço. Verifique a URL do Flow e tente novamente.");
+    }
+
+    btn.disabled = false;
+    input.focus();
+  }
+
+  document.getElementById("userInput").addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+</script>
+
+</body>
+</html>
